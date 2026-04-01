@@ -6,12 +6,12 @@ interface LogSheetProps {
   onClose: () => void;
 }
 
-const PRESET_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#F9A826', '#9B59B6', '#FF8ED4', '#55E6C1'];
+const PRESET_COLORS = ['#F87171', '#2DD4BF', '#38BDF8', '#FBBF24', '#C084FC', '#4ADE80', '#F472B6', '#94A3B8'];
 
 const LogSheet: React.FC<LogSheetProps> = ({ store, onClose }) => {
   const [newSubjectName, setNewSubjectName] = useState('');
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0]);
-  const [logHours, setLogHours] = useState(1);
+  const [logHours, setLogHours] = useState<number | ''>('');
   const [activeTab, setActiveTab] = useState<'log' | 'create'>(store.subjects.length > 0 ? 'log' : 'create');
 
   const handleCreateSubject = (e: React.FormEvent) => {
@@ -24,9 +24,10 @@ const LogSheet: React.FC<LogSheetProps> = ({ store, onClose }) => {
 
   const handleLogTime = (e: React.FormEvent) => {
     e.preventDefault();
-    if (store.activeSubjectId && logHours > 0) {
-      store.logTime(store.activeSubjectId, logHours);
-      setLogHours(1);
+    const hours = typeof logHours === 'number' ? logHours : parseFloat(logHours);
+    if (store.activeSubjectId && hours > 0) {
+      store.logTime(store.activeSubjectId, hours);
+      setLogHours('');
       onClose();
     }
   };
@@ -55,7 +56,7 @@ const LogSheet: React.FC<LogSheetProps> = ({ store, onClose }) => {
               onChange={(e) => setNewSubjectName(e.target.value)}
               className="tb-input"
             />
-            <div className="tb-color-picker">
+            <div className="tb-color-picker" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
               {PRESET_COLORS.map(color => (
                 <button
                   key={color} type="button"
@@ -64,6 +65,15 @@ const LogSheet: React.FC<LogSheetProps> = ({ store, onClose }) => {
                   onClick={() => setSelectedColor(color)}
                 />
               ))}
+              <div style={{ position: 'relative', width: '28px', height: '28px', borderRadius: '50%', overflow: 'hidden', border: '2px solid white', boxShadow: '0 0 0 2px #E2E8F0', flexShrink: 0 }}>
+                <input 
+                  type="color" 
+                  value={selectedColor} 
+                  onChange={(e) => setSelectedColor(e.target.value)}
+                  style={{ position: 'absolute', top: '-10px', left: '-10px', width: '50px', height: '50px', cursor: 'pointer', border: 'none' }}
+                  title="Custom Color"
+                />
+              </div>
             </div>
             <button type="submit" className="tb-btn tb-btn-primary" disabled={!newSubjectName.trim()}>Create Subject</button>
           </form>
@@ -81,14 +91,16 @@ const LogSheet: React.FC<LogSheetProps> = ({ store, onClose }) => {
             </select>
             <div className="tb-row">
               <input
-                type="number" min="1" step="1"
+                type="number" min="0.5" step="0.5"
                 value={logHours}
-                onChange={(e) => setLogHours(parseInt(e.target.value) || 1)}
+                onChange={(e) => setLogHours(e.target.value === '' ? '' : parseFloat(e.target.value))}
                 className="tb-input"
+                placeholder="0.0"
               />
               <span className="tb-label">Hours</span>
             </div>
-            <button type="submit" className="tb-btn tb-btn-primary" disabled={!store.activeSubjectId || logHours < 1}>
+            
+            <button type="submit" className="tb-btn tb-btn-primary" disabled={!store.activeSubjectId || logHours === '' || logHours <= 0}>
               Log Hours
             </button>
           </form>
