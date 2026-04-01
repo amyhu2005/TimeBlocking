@@ -35,6 +35,7 @@ export function useTimeBlockingStore() {
     const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setCurrentUser(session.user);
+        setTimeFilter('all');
         fetchUserData(session.user.id);
         setupProfileSubscription(session.user.id);
       } else {
@@ -111,23 +112,34 @@ export function useTimeBlockingStore() {
     });
     if (error) return { success: false, message: error.message };
     
-    // Create profile
+    // Create profile in background (don't block the UI result)
     if (data.user) {
-      await supabase.from('profiles').insert([{ id: data.user.id, username: username }]);
+      const initProfile = async () => {
+        try {
+          await supabase.from('profiles').insert([{ id: data.user!.id, username: username }]);
+          fetchUserData(data.user!.id);
+          setupProfileSubscription(data.user!.id);
+        } catch (e) {
+          console.error('Error creating profile after signup:', e);
+        }
+      };
+      initProfile();
       setCurrentUser(data.user);
-      fetchUserData(data.user.id);
-      setupProfileSubscription(data.user.id);
     }
     return { success: true };
   };
 
   const login = async (email: string, pass: string) => {
     const username = email.toLowerCase();
-    const { error } = await supabase.auth.signInWithPassword({ 
+    const { data, error } = await supabase.auth.signInWithPassword({ 
       email: `${username}@placeholder.com`, 
       password: pass 
     });
     if (error) return { success: false, message: error.message };
+    if (data.user) {
+       setCurrentUser(data.user);
+       fetchUserData(data.user.id);
+    }
     return { success: true };
   };
 
@@ -217,6 +229,13 @@ export function useTimeBlockingStore() {
     return { success: true };
   };
 
+  const updateSubject = async (id: string, name: string, color?: string) => {
+    if (isLoggedIn) {
+      await supabase.from('subjects').update({ name, color: color }).eq('id', id);
+    }
+    setSubjects(prev => prev.map(s => s.id === id ? { ...s, name, color: color || s.color } : s));
+  };
+
   const adjustUnplacedHours = async (subjectId: string, deltaHours: number, dateStr?: string) => {
     let targetDate = new Date();
     if (dateStr) {
@@ -263,7 +282,7 @@ export function useTimeBlockingStore() {
     setActiveSubjectId, setSearchQuery, setTimeFilter, setCustomStartDate, setCustomEndDate, setSleepHoursPerDay,
     signup, login, logout, addFriendRequest, getFriendData,
     addSubject, logTime, placeBlock, removeBlock, getUnplacedHours,
-    updateSubject: (id: string, name: string, color?: string) => setSubjects(prev => prev.map(s => s.id === id ? { ...s, name, color: color || s.color } : s)),
+    updateSubject,
     adjustUnplacedHours, updateDailyLogHours,
     acceptRequest: async (senderId: string) => {
       if (!isLoggedIn) return;
@@ -327,7 +346,12 @@ export function useTimeBlockingStore() {
     fetchFriendStats: async (friendId: string) => {
       const { data: logs } = await supabase.from('logs').select('*').eq('user_id', friendId);
       const { data: subjects } = await supabase.from('subjects').select('*').eq('user_id', friendId);
-      return { logs: logs || [], subjects: subjects || [] };
+      const { data: blocks } = await supabase.from('blocks').select('*').eq('user_id', friendId);
+      return { 
+        logs: logs || [], 
+        subjects: (subjects || []).map(s => ({ id: s.id, name: s.name, color: s.color })),
+        blocks: (blocks || []).map(b => ({ id: b.id, subjectId: b.subject_id, gridX: b.grid_x, gridY: b.grid_y, date: b.date }))
+      };
     }
   };
 }

@@ -600,98 +600,45 @@
   background: white;
 }
 
-/* Sidebar Tools Container */
+/* Sidebar Tools Container - Vertical Right */
 .tb-sidebar-tools {
-  position: absolute;
-  top: 7.5rem;
-  right: 1rem;
+  position: fixed;
+  top: 4.5rem;
+  right: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  z-index: 45;
+  z-index: 1000;
   pointer-events: none;
 }
 
 .tb-sidebar-tools > * {
   pointer-events: auto;
-  position: relative !important;
-  top: auto !important;
-  right: auto !important;
 }
 
-.tb-fab-share {
-  position: absolute;
-  top: 4.5rem;
-  right: 1rem;
-  z-index: 45;
-  background: white;
-  color: var(--tb-text);
-  border: 1px solid var(--tb-border);
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+/* Bottom Actions - Specific Positioning */
+.tb-save-container {
+  position: fixed; 
+  bottom: 4.2rem; 
+  left: 1.25rem; 
+  z-index: 100;
 }
 
-.tb-fab-share:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-}
-
-.tb-fab-share:active {
-  transform: scale(0.95);
+.tb-log-container {
+  position: fixed; 
+  bottom: 4.2rem; 
+  left: 0; 
+  right: 0; 
+  display: flex; 
+  justify-content: center; 
+  pointer-events: none; 
+  z-index: 100;
 }
 
 /* Mobile Specific Adjustments */
 @media (max-width: 600px) {
-  .tb-sidebar-tools {
-    top: 1rem;
-    right: 6.5rem; /* Left of zoom buttons */
-    flex-direction: row-reverse;
-    gap: 0.5rem;
-  }
-
-  .tb-save-container {
-    left: 0.5rem !important;
-    bottom: 4.1rem !important;
-  }
-
   .tb-save-btn {
-    padding: 0.6rem 0.8rem !important;
-    font-size: 0.75rem !important;
-  }
-
-  /* Shrink Highlight Modal */
-  .tb-modal-content {
-    width: 90% !important;
-    max-height: 85vh !important;
-    overflow-y: auto !important;
-    padding: 1.5rem !important;
-  }
-
-  .tb-modal-header {
-    margin-bottom: 1.25rem !important;
-  }
-
-  .tb-stats-grid {
-    margin-bottom: 1.25rem !important;
-    gap: 0.75rem !important;
-  }
-
-  .tb-stat-card {
-    padding: 0.75rem !important;
-  }
-
-  .tb-stat-value {
-    font-size: 1.5rem !important;
-  }
-
-  .tb-chart-container {
-    margin-bottom: 1.25rem !important;
+    padding: 0.5rem 0.8rem !important;
+    font-size: 0.7rem !important;
   }
 }

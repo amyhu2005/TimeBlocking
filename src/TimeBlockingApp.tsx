@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './TimeBlocking.css';
 import GridCanvas from './GridCanvas';
 import LogSheet from './LogSheet';
@@ -16,6 +16,8 @@ const TimeBlockingApp: React.FC = () => {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isFriendsOpen, setIsFriendsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isNudgeOpen, setIsNudgeOpen] = useState(false);
+  const [hasNudged, setHasNudged] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isAuditExpanded, setIsAuditExpanded] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -66,6 +68,13 @@ const TimeBlockingApp: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  useEffect(() => {
+    if (!store.isLoggedIn && store.placedBlocks.length > 3 && !hasNudged) {
+      setIsNudgeOpen(true);
+      setHasNudged(true);
+    }
+  }, [store.isLoggedIn, store.placedBlocks.length, hasNudged]);
+
 
 
   return (
@@ -109,18 +118,18 @@ const TimeBlockingApp: React.FC = () => {
 
       {!isAnyModalOpen && (
         <div className="tb-sidebar-tools">
+          <button className="tb-fab-share" onClick={() => setIsShareOpen(true)} title="Export Chart" style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'white', border: '1.5px solid #F1F5F9', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+          </button>
+
           <button className="tb-fab-account" onClick={() => setIsAuthOpen(true)} title="Account" style={{ width: '42px', height: '42px', borderRadius: '12px', background: store.isLoggedIn ? 'var(--tb-text)' : 'white', color: store.isLoggedIn ? 'white' : '#334155', border: '1.5px solid #F1F5F9', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
             {store.isLoggedIn ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 900, letterSpacing: '-0.5px' }}>{store.currentUser?.user_metadata?.username?.[0].toUpperCase() || 'U'}</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 900, letterSpacing: '-0.5px' }}>{store.currentUser?.user_metadata?.username?.[0].toUpperCase() || 'U'}</span>
               </div>
             ) : (
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             )}
-          </button>
-
-          <button className="tb-fab-share" onClick={() => setIsShareOpen(true)} title="Export Chart" style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'white', border: '1.5px solid #F1F5F9', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
           </button>
 
           <button className="tb-fab-friends" onClick={() => store.isLoggedIn ? setIsFriendsOpen(true) : setIsAuthOpen(true)} title="Friends" style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'white', border: '1.5px solid #F1F5F9', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -206,13 +215,13 @@ const TimeBlockingApp: React.FC = () => {
 
           {!isAuditExpanded && (
             <>
-              <div className="tb-save-container" style={{ position: 'fixed', bottom: '4rem', left: '1rem', zIndex: 100 }}>
+              <div className="tb-save-container">
                 <button className="tb-save-btn" onClick={downloadDataTxt} style={{ padding: '0.7rem 1rem', background: '#10B981', color: 'white', borderRadius: '12px', border: 'none', fontWeight: 800, boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem' }}>
                   💾 Save TXT
                 </button>
               </div>
 
-              <div className="tb-log-container" style={{ position: 'fixed', bottom: '4rem', left: '0', right: '0', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 100 }}>
+              <div className="tb-log-container">
                 <button onClick={() => setIsLogSheetOpen(true)} style={{ pointerEvents: 'auto', padding: '0.8rem 1.5rem', background: '#1E293B', color: 'white', borderRadius: '30px', border: 'none', fontWeight: 800, boxShadow: '0 8px 24px rgba(45, 55, 72, 0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                   Log Time
@@ -251,6 +260,34 @@ const TimeBlockingApp: React.FC = () => {
 
       {isHelpOpen && (
         <HelpModal onClose={() => setIsHelpOpen(false)} />
+      )}
+
+      {isNudgeOpen && (
+        <div className="tb-modal-overlay" onClick={() => setIsNudgeOpen(false)} style={{ zIndex: 400 }}>
+          <div className="tb-modal" onClick={e => e.stopPropagation()} style={{ 
+            maxWidth: '380px', width: '90%', borderRadius: '24px', padding: '2rem', textAlign: 'center', background: 'white', border: '1px solid #F1F5F9'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🛡️</div>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: '0.8rem', color: '#1E293B' }}>Want to keep your time blocks safe?</h3>
+            <p style={{ color: '#64748B', fontSize: '0.95rem', lineHeight: 1.5, marginBottom: '1.5rem', fontWeight: 500 }}>
+              Log your hours! Sign in to sync your work across devices and never lose your progress.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+              <button 
+                onClick={() => { setIsNudgeOpen(false); setIsAuthOpen(true); }}
+                style={{ background: 'var(--tb-text)', color: 'white', border: 'none', borderRadius: '14px', padding: '1rem', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.2)' }}
+              >
+                Sign In Now
+              </button>
+              <button 
+                onClick={() => setIsNudgeOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#94A3B8', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

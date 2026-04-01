@@ -12,6 +12,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ store, onClose }) => {
   const [pass, setPass] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (store.isLoggedIn) {
+      onClose();
+    }
+  }, [store.isLoggedIn, onClose]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -22,12 +28,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ store, onClose }) => {
     
     if (mode === 'signup') {
       const res = await store.signup(user, pass);
-      if (!res.success) setError(res.message || 'Signup failed');
-      else onClose();
+      if (res.success) {
+        onClose();
+      } else {
+        setError(res.message || 'Signup failed');
+      }
     } else {
       const res = await store.login(user, pass);
-      if (!res.success) setError(res.message || 'Login failed');
-      else onClose();
+      if (res.success) {
+        onClose();
+      } else {
+        setError(res.message || 'Login failed');
+      }
     }
   };
 

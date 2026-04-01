@@ -9,8 +9,8 @@ interface FriendsModalProps {
 const FriendsModal: React.FC<FriendsModalProps> = ({ store, onClose }) => {
   const [friendSearch, setFriendSearch] = useState('');
   const [viewingFriendId, setViewingFriendId] = useState<string | null>(null);
-  const [friendFilter, setFriendFilter] = useState<'week' | 'month' | 'year'>('week');
-  const [friendData, setFriendData] = useState<{ logs: any[], subjects: any[] } | null>(null);
+  const [friendFilter, setFriendFilter] = useState<'week' | 'month' | 'year'>('year');
+  const [friendData, setFriendData] = useState<{ logs: any[], subjects: any[], blocks: any[] } | null>(null);
 
   React.useEffect(() => {
     if (viewingFriendId) {
@@ -32,6 +32,95 @@ const FriendsModal: React.FC<FriendsModalProps> = ({ store, onClose }) => {
         alert(res.message);
       }
     }
+  };
+
+  const renderFriendGrid = () => {
+    if (!friendData) return null;
+    
+    // 1. Filter blocks by friendFilter
+    const now = new Date();
+    const filteredBlocks = friendData.blocks?.filter(b => {
+      const d = b.date ? new Date(b.date) : new Date(0);
+      if (friendFilter === 'week') return (now.getTime() - d.getTime()) < 7 * 24 * 60 * 60 * 1000;
+      if (friendFilter === 'month') return (now.getTime() - d.getTime()) < 30 * 24 * 60 * 60 * 1000;
+      return true; // 'all'
+    });
+
+    if (!filteredBlocks || filteredBlocks.length === 0) {
+      return (
+        <div style={{ marginTop: '1.5rem', background: '#F8FAFC', padding: '2rem', borderRadius: '16px', border: '1px solid #F1F5F9', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📭</div>
+          <p style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600 }}>No blocks logged in this period.</p>
+        </div>
+      );
+    }
+
+    // 2. Calculate bounding box
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    filteredBlocks.forEach(b => {
+      if (b.gridX < minX) minX = b.gridX;
+      if (b.gridX > maxX) maxX = b.gridX;
+      if (b.gridY < minY) minY = b.gridY;
+      if (b.gridY > maxY) maxY = b.gridY;
+    });
+
+    // Add 4 block margin
+    const startX = minX - 4;
+    const endX = maxX + 4;
+    const startY = minY - 4;
+    const endY = maxY + 4;
+
+    const cols = endX - startX + 1;
+    const rows = endY - startY + 1;
+    
+    return (
+      <div style={{ marginTop: '1.5rem', background: '#F8FAFC', padding: '1rem', borderRadius: '16px', border: '1px solid #F1F5F9' }}>
+        <h4 style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', textAlign: 'center', marginBottom: '1rem' }}>Friend's Map</h4>
+        <div style={{ overflowX: 'auto', paddingBottom: '0.5rem' }} className="minimal-scrollbar">
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: `repeat(${cols}, 14px)`, 
+            gridTemplateRows: `repeat(${rows}, 14px)`, 
+            gap: '1px',
+            background: '#FFFFFF',
+            padding: '4px',
+            borderRadius: '8px',
+            width: 'fit-content',
+            margin: '0 auto',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          }}>
+            {Array.from({ length: cols * rows }).map((_, i) => {
+              const x = startX + (i % cols);
+              const y = startY + Math.floor(i / cols);
+              
+              const block = filteredBlocks.find(b => b.gridX === x && b.gridY === y);
+              const subject = block ? friendData.subjects?.find(s => s.id === block.subjectId) : null;
+              
+              let backgroundColor = '#F8FAFC';
+              if (subject) backgroundColor = subject.color;
+              else if (x >= minX && x <= maxX && y >= minY && y <= maxY) backgroundColor = 'white';
+              
+              return (
+                <div 
+                  key={i} 
+                  style={{ 
+                    background: backgroundColor,
+                    borderRadius: '1px',
+                    width: '14px',
+                    height: '14px'
+                  }} 
+                />
+              );
+            })}
+          </div>
+        </div>
+        <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '0.8rem', fontSize: '0.6rem', color: '#94A3B8', fontWeight: 700 }}>
+           <span>Auto-Zoom View</span>
+           <span>•</span>
+           <span>4-Block Margin</span>
+        </div>
+      </div>
+    );
   };
 
   const renderFriendData = (friendId: string) => {
@@ -93,24 +182,12 @@ const FriendsModal: React.FC<FriendsModalProps> = ({ store, onClose }) => {
           </div>
         </div>
 
-        <div className="friend-activity-visualization" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-           <h4 style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', textAlign: 'center' }}>Activity Consistency</h4>
-           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-              {Array.from({ length: 28 }).map((_, i) => {
-                const dayLogs = filteredLogs.filter(l => {
-                  const d = new Date(l.date);
-                  return d.getDay() === i % 7; 
-                });
-                const intensity = Math.min(dayLogs.length / 3, 1);
-                return (
-                  <div key={i} style={{ aspectRatio: '1/1', borderRadius: '4px', background: intensity > 0 ? `rgba(56, 189, 248, ${0.1 + intensity * 0.9})` : '#F1F5F9', border: intensity > 0 ? '1px solid rgba(56, 189, 248, 0.2)' : 'none' }} />
-                );
-              })}
-           </div>
-        </div>
+        {renderFriendGrid()}
       </div>
     );
   };
+
+  const currentUsername = store.currentUser?.user_metadata?.username || 'User';
 
   return (
     <div className="tb-modal-overlay" onClick={onClose}>
@@ -130,10 +207,10 @@ const FriendsModal: React.FC<FriendsModalProps> = ({ store, onClose }) => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--tb-text)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 800 }}>
-              {store.currentUser?.username?.[0].toUpperCase()}
+              {currentUsername[0].toUpperCase()}
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>{store.currentUser?.username}</h2>
+              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>{currentUsername}</h2>
               <span style={{ fontSize: '0.7rem', color: '#10B981', fontWeight: 700 }}>• Account Active</span>
             </div>
           </div>
